@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # ============================================================
       # 1. SYNCHRONISATION DES TAGS
       # ============================================================
@@ -54,6 +55,7 @@ jobs:
           echo ""
           echo "Tags synchronisés."
 
+
       # ============================================================
       # 2. SYNCHRONISATION DES RELEASES
       # ============================================================
@@ -80,6 +82,7 @@ jobs:
           rm -rf /tmp/releases
           mkdir -p /tmp/releases
 
+
           # ========================================================
           # Récupération de toutes les releases officielles
           # ========================================================
@@ -100,6 +103,7 @@ jobs:
           echo "Releases trouvées : $RELEASE_COUNT"
           echo ""
 
+
           # ========================================================
           # Fonction : récupérer une release du fork
           # ========================================================
@@ -112,6 +116,7 @@ jobs:
               --json databaseId,name,tagName,uploadUrl,assets \
               2>/dev/null || true
           }
+
 
           # ========================================================
           # Fonction : upload d'un asset
@@ -167,6 +172,7 @@ jobs:
             echo "Upload terminé : $asset_name"
           }
 
+
           # ========================================================
           # Parcours des releases officielles
           # ========================================================
@@ -186,6 +192,7 @@ jobs:
             echo "Nom     : $NAME"
             echo "Assets  : $ASSET_COUNT"
             echo "===================================="
+
 
             # ======================================================
             # Vérification de l'existence sur le fork
@@ -233,6 +240,7 @@ jobs:
 
               echo "Release créée."
 
+
               # ====================================================
               # Récupération de la Release nouvellement créée
               # ====================================================
@@ -259,6 +267,7 @@ jobs:
 
             fi
 
+
             # ======================================================
             # Synchronisation des assets
             # ======================================================
@@ -283,6 +292,7 @@ jobs:
               echo "Asset : $ASSET_NAME"
               echo "------------------------------------"
 
+
               # ====================================================
               # Vérifie si l'asset existe déjà sur le fork
               # ====================================================
@@ -306,6 +316,7 @@ jobs:
                 continue
               fi
 
+
               # ====================================================
               # Asset absent : téléchargement
               # ====================================================
@@ -326,6 +337,7 @@ jobs:
               echo ""
               echo "Téléchargement terminé."
 
+
               # ====================================================
               # Vérification du fichier
               # ====================================================
@@ -340,6 +352,7 @@ jobs:
 
               echo "Taille : $FILE_SIZE octets"
 
+
               # ====================================================
               # Upload vers le fork
               # ====================================================
@@ -348,6 +361,7 @@ jobs:
                 "$TARGET_ID" \
                 "$ASSET_NAME" \
                 "$FILE"
+
 
               # ====================================================
               # Nettoyage
@@ -364,6 +378,70 @@ jobs:
             echo "Release synchronisée : $TAG"
 
           done
+
+
+          # ========================================================
+          # 3. DEFINIR LA VRAIE DERNIERE RELEASE COMME "LATEST"
+          # ========================================================
+
+          echo ""
+          echo "===================================="
+          echo "Détermination de la dernière Release"
+          echo "===================================="
+          echo ""
+
+          LATEST_TAG=$(
+            jq -r '
+              [.[][] |
+                select(.draft == false) |
+                select(.prerelease == false) |
+                select(.published_at != null)
+              ]
+              | sort_by(.published_at)
+              | last
+              | .tag_name
+            ' /tmp/releases.json
+          )
+
+          if [ -z "$LATEST_TAG" ] || [ "$LATEST_TAG" = "null" ]; then
+            echo "ERREUR : impossible de déterminer la dernière release."
+            exit 1
+          fi
+
+          echo "Dernière release officielle : $LATEST_TAG"
+          echo ""
+
+
+          # ========================================================
+          # Vérification de la présence de la release sur la cible
+          # ========================================================
+
+          if ! gh release view "$LATEST_TAG" \
+            --repo "$TARGET" >/dev/null 2>&1; then
+
+            echo "ERREUR : la release $LATEST_TAG n'existe pas sur le dépôt cible."
+            exit 1
+          fi
+
+          echo "Release $LATEST_TAG trouvée sur le dépôt cible."
+          echo ""
+
+
+          # ========================================================
+          # Force cette release comme Latest
+          # ========================================================
+
+          echo "Configuration de $LATEST_TAG comme Latest..."
+
+          gh release edit "$LATEST_TAG" \
+            --repo "$TARGET" \
+            --latest
+
+          echo ""
+          echo "===================================="
+          echo "Latest configuré : $LATEST_TAG"
+          echo "===================================="
+
 
           # ========================================================
           # Nettoyage final
