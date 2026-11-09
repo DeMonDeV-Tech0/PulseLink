@@ -24,7 +24,7 @@ jobs:
 
       - name: Sync tags from official repository
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PULSE_SYNC_TOKEN }}
         shell: bash
         run: |
           set -e
@@ -62,7 +62,7 @@ jobs:
 
       - name: Sync releases
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PULSE_SYNC_TOKEN }}
         shell: bash
         run: |
           set -e
