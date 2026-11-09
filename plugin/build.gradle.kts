@@ -16,17 +16,9 @@ lavalinkPlugin {
 dependencies {
 	implementation(project(":main"))
 	implementation(project(":protocol"))
-	compileOnly("com.github.lavalink-devs.youtube-source:common:1.0.5")
 	compileOnly("com.github.topi314.lavasearch:lavasearch:1.0.0")
 	implementation("com.github.topi314.lavasearch:lavasearch-plugin-api:1.0.0")
 	implementation("com.github.topi314.lavalyrics:lavalyrics-plugin-api:1.0.0")
-
-	// Copy lyrics.kt from main
-	project.project(":main").configurations["implementation"].dependencies.forEach {
-		if (it.group == "dev.schlaubi.lyrics") {
-			add("implementation", it)
-		}
-	}
 
 	testImplementation(platform("org.junit:junit-bom:5.10.2"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
@@ -38,8 +30,6 @@ tasks {
 	jar {
 		dependsOn(":main:jar", ":protocol:jar", ":protocol:jvmJar")
 		from(zipTree(project(":protocol").layout.buildDirectory.file("libs/pulselink-protocol-jvm-${project.version}.jar")))
-		exclude("dev/schlaubi/lyrics/LyricsClient*")
-		exclude("dev/schlaubi/lyrics/Lyrics_jvmKt.class")
 	}
 }
 
